@@ -15,7 +15,7 @@ public partial class MainWindow : Window
     private const string Untagged = "未标记";
     private const string AllMakes = "全部制造商";
     private static readonly string[] Classes = ["D", "C", "B", "A", "S1", "S2", "R", "X"];
-    private static readonly string[] ClassColors = ["#187CA3", "#A66B00", "#A34811", "#E40045", "#A84AD6", "#195BDB", "#8555AF", "#176453"];
+    private static readonly string[] ClassColors = ["#187CA3", "#A66B00", "#A34811", "#E40045", TagColors.S1, "#195BDB", "#8555AF", "#176453"];
     private readonly Dictionary<int, CardView> visible = [];
     private List<Car> cars = [];
     private Car? selected;
@@ -35,6 +35,7 @@ public partial class MainWindow : Window
         ClassFilter.SelectedIndex = 0;
         RaceTag.ItemsSource = new[] { Untagged }.Concat(TagColors.Uses.Keys).ToArray();
         StyleTag.ItemsSource = new[] { Untagged }.Concat(TagColors.Styles.Keys).ToArray();
+        StrengthTag.ItemsSource = new[] { Untagged }.Concat(TagColors.Strengths.Keys).ToArray();
         Loaded += async (_, _) => await RefreshProfiles();
         Closed += (_, _) => pictures?.Dispose();
     }
@@ -69,7 +70,7 @@ public partial class MainWindow : Window
             loading = true;
             Profiles.IsEnabled = false;
             ApplyButton.IsEnabled = false;
-            RaceTag.IsEnabled = StyleTag.IsEnabled = false;
+            RaceTag.IsEnabled = StyleTag.IsEnabled = StrengthTag.IsEnabled = false;
             Status.Text = "正在读取车库存档和车型目录…";
             game = GarageReader.FindGame();
             var loaded = await Task.Run(() => GarageReader.Read(source, game));
@@ -99,7 +100,7 @@ public partial class MainWindow : Window
         {
             loading = false;
             Profiles.IsEnabled = true;
-            RaceTag.IsEnabled = StyleTag.IsEnabled = selected is not null;
+            RaceTag.IsEnabled = StyleTag.IsEnabled = StrengthTag.IsEnabled = selected is not null;
             ApplyButton.IsEnabled = tags is not null && game is not null;
         }
     }
@@ -174,7 +175,7 @@ public partial class MainWindow : Window
             BorderThickness = new Thickness(3), BorderBrush = Brushes.Transparent, CornerRadius = new CornerRadius(5),
             Margin = new Thickness(0, 0, 8, 8), ClipToBounds = true };
         var view = new CardView(frame, chips, image, placeholder);
-        FillBadges(view, tags?.Get(car) ?? TagPair.Empty);
+        FillBadges(view, tags?.Get(car) ?? TagSet.Empty);
         return view;
     }
 
@@ -203,12 +204,12 @@ public partial class MainWindow : Window
         ? car.Pi > 0 ? $"{Classes[car.ClassId]} {car.Pi}" : Classes[car.ClassId]
         : car.Pi > 0 ? $"PI {car.Pi}" : "—";
 
-    private static void FillBadges(CardView view, TagPair pair)
+    private static void FillBadges(CardView view, TagSet carTags)
     {
         view.Tags.Children.Clear();
-        foreach (var (label, colors) in new[] { (pair.Use, TagColors.Uses), (pair.Style, TagColors.Styles) })
+        foreach (var (colors, read) in TagColors.Categories)
         {
-            if (label is null) continue;
+            if (read(carTags) is not string label) continue;
             var badge = CardText(label, 12, TagColors.Foreground(label), true);
             badge.Background = TagColors.Brush(colors[label]);
             badge.Padding = new Thickness(6, 0, 6, 0);
@@ -244,10 +245,11 @@ public partial class MainWindow : Window
         DetailsMeta.Text = car is null ? "" : $"{car.Year} {car.Make}\n{Rating(car)} · 车库编号 #{car.Id}";
         DetailsImage.Source = null;
         ImageSource.Text = car is null ? "" : "正在读取图片…";
-        RaceTag.IsEnabled = StyleTag.IsEnabled = car is not null && !loading;
-        var pair = car is null ? TagPair.Empty : tags?.Get(car) ?? TagPair.Empty;
-        RaceTag.SelectedItem = pair.Use ?? Untagged;
-        StyleTag.SelectedItem = pair.Style ?? Untagged;
+        RaceTag.IsEnabled = StyleTag.IsEnabled = StrengthTag.IsEnabled = car is not null && !loading;
+        var carTags = car is null ? TagSet.Empty : tags?.Get(car) ?? TagSet.Empty;
+        RaceTag.SelectedItem = carTags.Use ?? Untagged;
+        StyleTag.SelectedItem = carTags.Style ?? Untagged;
+        StrengthTag.SelectedItem = carTags.Strength ?? Untagged;
         updateControls = false;
         if (car is not null) _ = LoadDetails(car, version);
     }
@@ -294,12 +296,14 @@ public partial class MainWindow : Window
     private void TagsChanged(object sender, SelectionChangedEventArgs args)
     {
         if (loading || updateControls || selected is not Car car || tags is null ||
-            RaceTag.SelectedItem is not string use || StyleTag.SelectedItem is not string style) return;
+            RaceTag.SelectedItem is not string use || StyleTag.SelectedItem is not string style ||
+            StrengthTag.SelectedItem is not string strength) return;
         try
         {
-            var pair = new TagPair(use == Untagged ? null : use, style == Untagged ? null : style);
-            tags.Save(car, pair);
-            if (visible.TryGetValue(car.Id, out var view)) FillBadges(view, pair);
+            var carTags = new TagSet(use == Untagged ? null : use, style == Untagged ? null : style,
+                strength == Untagged ? null : strength);
+            tags.Save(car, carTags);
+            if (visible.TryGetValue(car.Id, out var view)) FillBadges(view, carTags);
             Status.Text = $"已保存 #{car.Id} 的标签。退出游戏后可应用到原生车卡。";
         }
         catch (Exception error) { SelectCar(car); Error(error); }
@@ -313,7 +317,7 @@ public partial class MainWindow : Window
             var records = cars.Select(car => (car, tags.Get(car))).ToArray();
             var location = game;
             await Task.Run(() => BadgePatch.Apply(location, records));
-            Status.Text = "已应用。下次启动 FH6 就能看到已标记车辆的中文徽标。";
+            Status.Text = "已应用。下次启动 FH6 就能看到已标记车辆的徽标。";
         }
         catch (Exception error) { Error(error); }
         finally { ApplyButton.IsEnabled = game is not null && tags is not null; }

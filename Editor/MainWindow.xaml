@@ -78,6 +78,8 @@
             <ComboBox x:Name="RaceTag" SelectionChanged="TagsChanged" IsEnabled="False" AutomationProperties.Name="赛事类型"/>
             <TextBlock Text="性能倾向" Margin="0,13,0,5" FontWeight="Bold"/>
             <ComboBox x:Name="StyleTag" SelectionChanged="TagsChanged" IsEnabled="False" AutomationProperties.Name="性能倾向"/>
+            <TextBlock Text="强度" Margin="0,13,0,5" FontWeight="Bold"/>
+            <ComboBox x:Name="StrengthTag" SelectionChanged="TagsChanged" IsEnabled="False" AutomationProperties.Name="强度"/>
           </StackPanel>
         </ScrollViewer>
       </Border>

@@ -12,13 +12,13 @@ internal static class BadgePatch
     internal const string Resource = "Resources/Anthem/Shared_CarSelect.xaml";
     internal const string Override = "mediapc/UI/" + Resource;
 
-    internal static byte[] Build(string original, IEnumerable<(Car Car, TagPair Tags)> records)
+    internal static byte[] Build(string original, IEnumerable<(Car Car, TagSet Tags)> records)
     {
         using var ui = ZipFile.OpenRead(original);
         using var stream = ui.GetEntry(Resource)?.Open() ?? throw new InvalidDataException("未找到原生车卡模板。");
         using var reader = new StreamReader(stream, Encoding.UTF8);
         var source = reader.ReadToEnd();
-        var rows = records.Where(pair => pair.Tags != TagPair.Empty).ToArray();
+        var rows = records.Where(pair => pair.Tags != TagSet.Empty).ToArray();
         if (rows.Any(row => row.Car.Id <= 0) || rows.Select(row => row.Car.Id).Distinct().Count() != rows.Length)
             throw new InvalidDataException("标签包含无效的单车编号。");
         var definitions = new StringBuilder();
@@ -26,11 +26,11 @@ internal static class BadgePatch
             definitions.AppendLine($"    <System:Int32 x:Key=\"GarageEditorId{car.Id}\">{car.Id}</System:Int32>");
         var badges = new StringBuilder("\n                        <StackPanel Orientation=\"Horizontal\" HorizontalAlignment=\"Center\">\n");
         int index = 0;
-        foreach (bool use in new[] { true, false })
+        foreach (var (colors, read) in TagColors.Categories)
         {
-            foreach (var item in use ? TagColors.Uses : TagColors.Styles)
+            foreach (var item in colors)
             {
-                var ids = rows.Where(row => (use ? row.Tags.Use : row.Tags.Style) == item.Key).Select(row => row.Car.Id).ToArray();
+                var ids = rows.Where(row => read(row.Tags) == item.Key).Select(row => row.Car.Id).ToArray();
                 if (ids.Length == 0) continue;
                 var map = $"GarageEditorVisibility{index++}";
                 definitions.AppendLine($"    <local:MappingConverter x:Key=\"{map}Map\" Default=\"{{x:Static Visibility.Collapsed}}\">");
@@ -68,7 +68,7 @@ internal static class BadgePatch
         return Encoding.UTF8.GetBytes(patched);
     }
 
-    internal static void Apply(string game, IEnumerable<(Car Car, TagPair Tags)> records)
+    internal static void Apply(string game, IEnumerable<(Car Car, TagSet Tags)> records)
     {
         if (Process.GetProcessesByName("forzahorizon6").Length != 0)
             throw new InvalidOperationException("请退出 FH6 后应用徽标。标签已保存在编辑器里。");

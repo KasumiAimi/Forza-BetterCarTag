@@ -1,0 +1,36 @@
+name: Windows release
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/windows-release.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Build Windows executable
+        shell: pwsh
+        run: |
+          git clone --depth 1 --branch ForzaModToolV1.3.0.6 https://github.com/HTTPJXRDN/Forza-Mod-Tool.git .deps/Forza-Mod-Tool
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ((git -C .deps/Forza-Mod-Tool rev-parse HEAD) -ne '09cf655d964942346cc31995cd322062904bf893') { throw 'Unexpected dependency revision' }
+          dotnet publish Editor/FH6GarageEditor.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-FileHash -LiteralPath dist/FH6GarageEditor.exe
+      - name: Publish Windows download
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1.0.0 dist/FH6GarageEditor.exe --target $env:GITHUB_SHA --latest --title 'FH6 车库编辑器' --notes ''
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
