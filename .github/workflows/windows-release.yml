@@ -32,5 +32,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v1.0.1 dist/BetterCarTage.exe --target $env:GITHUB_SHA --latest --title '更好的车辆标签' --notes ''
+          gh release upload v1.0.1 dist/BetterCarTage.exe --clobber
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
