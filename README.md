@@ -1,8 +1,8 @@
-# FH6 车库编辑器
+# 更好的车辆标签
 
 《极限竞速：地平线 6》的中文 Windows 车库工具。自动读取本机车库和车辆缩略图，按单车设置赛事类型、性能倾向和强度，并在游戏的原生车卡上显示彩色标签。
 
-[**下载 Windows 版（FH6GarageEditor.exe）**](https://github.com/KasumiAimi/Forza-better-cartage/releases/latest/download/FH6GarageEditor.exe)
+[**下载 Windows 版（BetterCarTage.exe）**](https://github.com/KasumiAimi/Forza-better-cartage/releases/latest/download/BetterCarTage.exe)
 
 适用 Windows x64。下载后双击 EXE 即可使用，无需安装、编译或另装 .NET。
 
@@ -12,7 +12,7 @@
 
 ## 使用方法
 
-1. 打开 `FH6GarageEditor.exe`，工具会自动查找本机存档并列出车库车辆。检测到多个档案时可在右上角切换。自动查找不到时，可手动选择整份 `C_ProfileData` 文件。
+1. 打开 `BetterCarTage.exe`，工具会自动查找本机存档并列出车库车辆。检测到多个档案时可在右上角切换。自动查找不到时，可手动选择整份 `C_ProfileData` 文件。
 2. 按制造商、车辆等级、车型名或收藏筛选。游戏内车库或收藏有变化时，点击「刷新车库」同步。
 3. 选中车辆后，在左栏设置标签。每台车独立保存，选择「未标记」可清除对应类别。
 4. 要在游戏车库和赛前选车界面显示标签，请先退出 FH6，再点击「应用到游戏」，然后重新启动游戏。
