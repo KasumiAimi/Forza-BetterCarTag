@@ -43,4 +43,3 @@ dotnet publish Editor/FH6GarageEditor.csproj -c Release -r win-x64 --self-contai
 存档与缩略图读取使用 [Forza Mod Tool](https://github.com/HTTPJXRDN/Forza-Mod-Tool) 的组件。构建时从上游获取这些依赖。
 
 本项目是玩家制作的非官方工具。
-

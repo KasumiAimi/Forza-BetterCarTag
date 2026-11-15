@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>GarageEditor.ico</ApplicationIcon>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Upstream Condition="'$(Upstream)' == ''">../.deps/Forza-Mod-Tool/CondensedSource</Upstream>
+  </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="GarageEditor.ico" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.28" />
+    <PackageReference Include="BCnEncoder.Net" Version="2.3.0" />
+    <Compile Include="$(Upstream)/ForzaZip.cs;$(Upstream)/GameDb.cs;$(Upstream)/Scramble.cs" />
+    <Compile Include="$(Upstream)/CarEditor/CarDisplayNames.cs;$(Upstream)/GarageViewer/GarageThumbnailCache.cs" />
+    <Compile Include="$(Upstream)/CarEditor/SwatchThumbnailDecoder.cs;$(Upstream)/CarEditor/Fh2ThumbnailDecoder.cs" />
+    <Reference Include="FH6LocalCrypto.Runtime"><HintPath>$(Upstream)/lib/FH6LocalCrypto.Runtime.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

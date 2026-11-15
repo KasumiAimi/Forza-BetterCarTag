@@ -1,0 +1,8 @@
+/.deps/
+/dist/
+**/bin/
+**/obj/
+*.exe
+*.dll
+*.sqlite*
+*.user
