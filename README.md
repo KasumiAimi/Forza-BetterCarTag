@@ -38,3 +38,5 @@
 ## 致谢
 
 存档和缩略图读取使用 [Forza Mod Tool](https://github.com/HTTPJXRDN/Forza-Mod-Tool) 的组件。
+
+界面设计与更新器的实现思路参考了《碧蓝航线》脚本 [ALAS（AzurLaneAutoScript）](https://github.com/LmeSzinc/AzurLaneAutoScript)。
