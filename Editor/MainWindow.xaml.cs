@@ -11,7 +11,8 @@ public partial class MainWindow : Window
 {
     private sealed record ProfileOption(SaveSource Source, string Display);
     private sealed record CardView(Border Frame, StackPanel Tags, Image Image, TextBlock Placeholder);
-    private const int PageSize = 24;
+    private const double CardColumnWidth = 238;
+    private const double CardRowHeight = 174;
     private const string Untagged = "未标记";
     private const string AllMakes = "全部制造商";
     private static readonly string[] Classes = ["D", "C", "B", "A", "S1", "S2", "R", "X"];
@@ -25,6 +26,7 @@ public partial class MainWindow : Window
     private bool loading;
     private bool updateControls;
     private int page;
+    private int pageSize = 1;
     private int displayRevision;
     private int detailRevision;
 
@@ -105,7 +107,21 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Render()
+    private void CarViewportChanged(object sender, SizeChangedEventArgs e)
+    {
+        int columns = Math.Max(1, (int)(e.NewSize.Width / CardColumnWidth));
+        int rows = Math.Max(1, (int)(e.NewSize.Height / CardRowHeight));
+        int capacity = columns * rows;
+        if (Cards.Columns == columns && pageSize == capacity) return;
+
+        int anchorIndex = page * pageSize;
+        Cards.Columns = columns;
+        pageSize = capacity;
+        page = anchorIndex / pageSize;
+        Render(keepSelectionVisible: true);
+    }
+
+    private void Render(bool keepSelectionVisible = false)
     {
         if (Cards is null || Search is null || Makes is null) return;
         int revision = ++displayRevision;
@@ -116,9 +132,16 @@ public partial class MainWindow : Window
         var filtered = FilterCars(cars, make, query, classId, FavoriteOnly?.IsChecked == true)
             .OrderBy(car => car.Make).ThenBy(car => car.Name).ThenByDescending(car => car.Pi).ThenBy(car => car.Id)
             .ToList();
-        int pages = Math.Max(1, (filtered.Count + PageSize - 1) / PageSize);
+        if (keepSelectionVisible && selected is not null)
+        {
+            int selectedIndex = filtered.IndexOf(selected);
+            if (selectedIndex >= 0) page = selectedIndex / pageSize;
+        }
+        int pages = Math.Max(1, (filtered.Count + pageSize - 1) / pageSize);
         page = Math.Clamp(page, 0, pages - 1);
-        var pageCars = filtered.Skip(page * PageSize).Take(PageSize).ToArray();
+        var pageCars = filtered.Skip(page * pageSize).Take(pageSize).ToArray();
+        int columns = Math.Max(1, Cards.Columns);
+        Cards.Height = ((pageCars.Length + columns - 1) / columns) * CardRowHeight;
         visible.Clear();
         Cards.Children.Clear();
         foreach (var car in pageCars)

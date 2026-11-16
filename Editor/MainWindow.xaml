@@ -83,8 +83,9 @@
           </StackPanel>
         </ScrollViewer>
       </Border>
-      <ScrollViewer x:Name="CarScroll" Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <WrapPanel x:Name="Cards" ItemWidth="238" ItemHeight="174" Orientation="Horizontal"/>
+      <ScrollViewer x:Name="CarScroll" Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                    SizeChanged="CarViewportChanged">
+        <UniformGrid x:Name="Cards" VerticalAlignment="Top"/>
       </ScrollViewer>
     </Grid>
     <DockPanel Grid.Row="3" Margin="0,11,0,0">
