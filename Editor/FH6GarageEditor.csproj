@@ -3,6 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <AssemblyName>BetterCarTage</AssemblyName>
+    <Version>1.1.0</Version>
     <RootNamespace>FH6GarageEditor</RootNamespace>
     <Product>更好的车辆标签</Product>
     <UseWPF>true</UseWPF>
@@ -12,7 +13,9 @@
     <Upstream Condition="'$(Upstream)' == ''">../.deps/Forza-Mod-Tool/CondensedSource</Upstream>
   </PropertyGroup>
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
     <Resource Include="GarageEditor.ico" />
+    <Resource Include="HeaderPortrait.png" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.28" />
     <PackageReference Include="BCnEncoder.Net" Version="2.3.0" />
     <Compile Include="$(Upstream)/ForzaZip.cs;$(Upstream)/GameDb.cs;$(Upstream)/Scramble.cs" />

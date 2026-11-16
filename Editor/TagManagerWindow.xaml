@@ -1,0 +1,55 @@
+<Window x:Class="FH6GarageEditor.TagManagerWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="标签管理" Icon="GarageEditor.ico" Width="640" Height="550" MinWidth="540" MinHeight="380"
+    WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+    Background="{StaticResource Workspace}" Foreground="{StaticResource Ink}" FontFamily="Microsoft YaHei UI" FontSize="14">
+  <Grid Margin="22">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <TextBlock Text="标签管理" Style="{StaticResource PageTitle}" Margin="0,0,0,14"/>
+    <TabControl x:Name="CategoryTabs" Grid.Row="1" SelectionChanged="CategoryChanged"
+                Background="{StaticResource Workspace}" BorderThickness="0" Padding="0">
+      <TabItem Header="赛事类型" Padding="16,8"/>
+      <TabItem Header="性能倾向" Padding="16,8"/>
+      <TabItem Header="强度" Padding="16,8"/>
+    </TabControl>
+    <TextBlock x:Name="LengthHint" Grid.Row="2" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,12,0,10"/>
+    <ScrollViewer x:Name="TagScroll" Grid.Row="3" VerticalScrollBarVisibility="Auto">
+      <ItemsControl x:Name="TagRows" Grid.IsSharedSizeScope="True">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Grid Margin="0,0,8,8">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Color"/>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Delete"/>
+              </Grid.ColumnDefinitions>
+              <TextBox x:Name="TagName" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" MinHeight="34" Padding="8,0"
+                       VerticalContentAlignment="Center" AutomationProperties.Name="标签名称"/>
+              <Button Grid.Column="1" Click="ChooseColor" Padding="8,4" Margin="8,0,0,0"
+                      AutomationProperties.Name="选择标签颜色">
+                <StackPanel Orientation="Horizontal">
+                  <Border Background="{Binding Color}" BorderBrush="#777777" BorderThickness="1"
+                          Width="18" Height="18" Margin="0,0,7,0"/>
+                  <TextBlock Text="{Binding Color}" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button Grid.Column="2" Content="删除" Click="DeleteTag" Padding="13,4" Margin="8,0,0,0"/>
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+    <TextBlock x:Name="Notice" Grid.Row="4" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,8,0,12"
+               AutomationProperties.LiveSetting="Polite"/>
+    <DockPanel Grid.Row="5" LastChildFill="False">
+      <Button Content="添加标签" Click="AddTag" Padding="14,8" DockPanel.Dock="Left"/>
+      <Button Content="保存" Click="SaveTags" IsDefault="True" Padding="20,8" DockPanel.Dock="Right"
+              Style="{StaticResource PrimaryButton}"/>
+      <Button Content="取消" IsCancel="True" Padding="20,8" Margin="0,0,8,0" DockPanel.Dock="Right"/>
+    </DockPanel>
+  </Grid>
+</Window>

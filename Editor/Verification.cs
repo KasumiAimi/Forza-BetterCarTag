@@ -66,16 +66,17 @@ internal static class Verification
         XNamespace xaml = "http://schemas.microsoft.com/winfx/2006/xaml";
         foreach (var (car, carTags) in expectedLabels)
         {
-            foreach (var (colors, read) in TagColors.Categories)
+            for (int category = 0; category < TagCatalog.Categories.Length; category++)
             {
-                if (read(carTags) is not string label) continue;
+                if (TagCatalog.Categories[category].Read(carTags) is not string label) continue;
+                var tag = TagCatalog.Default.Find(category, label)!;
                 var badge = elements.Single(element => element.Name.LocalName == "FZTextBlock" &&
                     (string?)element.Attribute("Text") == label &&
                     ((string?)element.Parent?.Attribute("Visibility"))?.Contains("GarageEditorVisibility") == true);
                 var binding = (string?)badge.Parent?.Attribute("Visibility") ?? "";
                 var mapping = elements.Single(element => (string?)element.Attribute(xaml + "Key") is string key &&
                     key.EndsWith("Map") && binding.Contains($"{{StaticResource {key[..^3]}}}"));
-                if ((string?)badge.Parent?.Attribute("Background") != colors[label] ||
+                if ((string?)badge.Parent?.Attribute("Background") != tag.Color ||
                     (string?)mapping.Elements().Single().Attribute("Key") != $"{{StaticResource GarageEditorId{car.Id}}}")
                     throw new Exception($"The badge override changed the color or garage ID for {label}.");
             }
@@ -86,6 +87,7 @@ internal static class Verification
         if (cleared.Get(pair[0]) != new TagSet("公路", "操控") || cleared.Get(otherCars[0]) != TagSet.Empty ||
             cleared.Get(pair[1]) != expectedLabels[pair[1]])
             throw new Exception("Clearing a strength tag affected another tag or vehicle.");
+        VerifyCustomTags(folder, Path.Combine(game, "media", "UI.zip"), pair);
         using var pictures = new CarPictures(game);
         var imageSources = new Dictionary<string, int>();
         var probes = new List<string>();
@@ -125,7 +127,57 @@ internal static class Verification
             $"Favorite filter: {favorites.Length} cars. Favorite, class, manufacturer and text intersection verified.",
             "Classes: " + string.Join(", ", cars.GroupBy(car => car.ClassId).OrderBy(group => group.Key).Select(group => $"{group.Key}: {group.Count()}")),
             "Images: " + string.Join(", ", imageSources.Select(item => $"{item.Key}: {item.Value}")),
-            "Legacy tags, six strength badges by garage ID, independent clearing and unchanged save hash verified."
+            "Legacy tags, six strength badges by garage ID, independent clearing and unchanged save hash verified.",
+            "Custom tag limits, catalog persistence, rename, recolor, deletion and native badge XML verified."
         }.Concat(probes));
+    }
+
+    private static void VerifyCustomTags(string folder, string original, Car[] cars)
+    {
+        string file = Path.Combine(folder, "tag-catalog.json");
+        var originalCatalog = TagCatalog.Load(file);
+        var groups = TagCatalog.Categories.Select((_, index) => originalCatalog[index].ToArray()).ToArray();
+        var existing = groups[0][0];
+        const string renamed = "路&𠀀";
+        groups[0][0] = existing with { Name = renamed, Color = "#102030" };
+        var deleted = groups[1][0];
+        groups[1] = groups[1].Skip(1).ToArray();
+        const string customId = "verification-custom";
+        groups[2] = [.. groups[2], new TagDefinition(customId, "耐久MAX", "#F0E010")];
+        var catalog = new TagCatalog(groups);
+        catalog.Save(file, originalCatalog);
+        catalog = TagCatalog.Load(file);
+        var first = new TagStore(folder, "custom-first-profile");
+        var second = new TagStore(folder, "custom-second-profile");
+        first.Save(cars[0], new TagSet(existing.Id, deleted.Id), originalCatalog);
+        second.Save(cars[1], new TagSet(existing.Id, null, customId), catalog);
+        if (catalog.Find(0, first.Get(cars[0]).Use)?.Name != renamed ||
+            catalog.KeepDefined(first.Get(cars[0])) != new TagSet(existing.Id, null) ||
+            catalog.Find(0, second.Get(cars[1]).Use)?.Color != "#102030")
+            throw new Exception("Renaming or deleting a tag changed the wrong car assignments.");
+        var combinedFilters = new TagSet(existing.Id, "", customId);
+        if (!catalog.Matches(second.Get(cars[1]), combinedFilters) ||
+            catalog.Matches(first.Get(cars[0]), combinedFilters) ||
+            !catalog.Matches(first.Get(cars[0]), new TagSet(existing.Id, "", "")) ||
+            catalog.Matches(first.Get(cars[0]), new TagSet(existing.Id, deleted.Id)))
+            throw new Exception("Combined tag filters did not distinguish matching, untagged, or deleted labels.");
+        var elements = XDocument.Parse(System.Text.Encoding.UTF8.GetString(BadgePatch.Build(original,
+            [(cars[0], first.Get(cars[0])), (cars[1], second.Get(cars[1]))], catalog))).Descendants().ToArray();
+        var badge = elements.Single(element => element.Name.LocalName == "FZTextBlock" &&
+            (string?)element.Attribute("Text") == renamed);
+        if ((string?)badge.Parent?.Attribute("Background") != "#102030" ||
+            (string?)badge.Attribute("Color") != "#FFFFFF" ||
+            elements.Any(element => (string?)element.Attribute("Text") == deleted.Name) ||
+            !elements.Any(element => (string?)element.Attribute("Text") == "耐久MAX"))
+            throw new Exception("Custom labels or colors did not reach the generated native badges.");
+        for (int index = 0; index < groups.Length; index++)
+        {
+            int limit = TagCatalog.Categories[index].MaxWidth;
+            var invalid = groups.Select(group => group.ToArray()).ToArray();
+            invalid[index][0] = invalid[index][0] with { Name = new string('长', limit / 2) + "A" };
+            try { _ = new TagCatalog(invalid); }
+            catch (InvalidDataException) { continue; }
+            throw new Exception("An overlength tag name was accepted.");
+        }
     }
 }
