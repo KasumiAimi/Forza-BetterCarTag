@@ -2,7 +2,7 @@
 
 《极限竞速：地平线 6》的中文 Windows 车库工具。自动读取本机车库和车辆缩略图，按单车设置赛事类型、性能倾向和强度，并在游戏的原生车卡上显示彩色标签。
 
-[**下载 Windows 版（BetterCarTag.exe）**](https://github.com/KasumiAimi/Forza-better-cartage/releases/latest/download/BetterCarTag.exe)
+[**下载 Windows 版（BetterCarTag.exe）**](https://github.com/KasumiAimi/Forza-BetterCarTag/releases/latest/download/BetterCarTag.exe)
 
 适用 Windows x64。下载为压缩打包的单个 EXE，双击即可使用，无需安装或另装 .NET。重复打开时会切回已经打开的编辑器窗口。
 

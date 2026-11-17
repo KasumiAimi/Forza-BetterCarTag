@@ -20,7 +20,7 @@ internal sealed record PublishedRelease(Version Version, string Title, string Au
 
 internal sealed class ReleaseUpdates(HttpClient client)
 {
-    private const string Repository = "KasumiAimi/Forza-better-cartage";
+    private const string Repository = "KasumiAimi/Forza-BetterCarTag";
     private const string AssetName = "BetterCarTag.exe";
     private const long MaxDownloadSize = 400L * 1024 * 1024;
     internal const string ReleasePage = "https://github.com/" + Repository + "/releases";
