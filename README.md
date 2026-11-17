@@ -1,10 +1,12 @@
-# 更好的车辆标签
+# BetterCarTag
 
 《极限竞速：地平线 6》的中文 Windows 车库工具。自动读取本机车库和车辆缩略图，按单车设置赛事类型、性能倾向和强度，并在游戏的原生车卡上显示彩色标签。
 
-[**下载 Windows 版（BetterCarTage.exe）**](https://github.com/KasumiAimi/Forza-better-cartage/releases/latest/download/BetterCarTage.exe)
+[**下载 Windows 版（BetterCarTag.exe）**](https://github.com/KasumiAimi/Forza-better-cartage/releases/latest/download/BetterCarTag.exe)
 
 适用 Windows x64。下载为压缩打包的单个 EXE，双击即可使用，无需安装或另装 .NET。重复打开时会切回已经打开的编辑器窗口。
+
+从旧版升级时，请先关闭编辑器，然后下载并打开 `BetterCarTag.exe`。已有标签会自动加载。
 
 ## 使用前请知悉
 
@@ -12,7 +14,7 @@
 
 ## 使用方法
 
-1. 打开 `BetterCarTage.exe`，工具会自动查找本机存档并列出车库车辆。检测到多个档案时可在右上角切换。自动查找不到时，可手动选择整份 `C_ProfileData` 文件。
+1. 打开 `BetterCarTag.exe`，工具会自动查找本机存档并列出车库车辆。检测到多个档案时可在右上角切换。自动查找不到时，可手动选择整份 `C_ProfileData` 文件。
 2. 按制造商、车辆等级、车型名、收藏和三类标签组合筛选。每类标签可选全部、具体标签或「未标记」。「清空筛选」会清除所有筛选和搜索词，回到完整车库的第一页。游戏内车库或收藏有变化时，点击「刷新车库」同步。
 3. 选中车辆后，左栏会显示车辆缩略图、已装轮胎、马力（hp）、车重（kg）和驱动形式，也可以在这里设置标签。漂移胎按安装的配方识别。每台车独立保存，选择「未标记」可清除对应类别。
 4. 点击「我的车辆」右侧的「标签管理」，可添加、改名、改色或删除标签。改名和改色后，车辆仍关联原标签。删除后，所有车库档案中的相关车辆都会恢复为该类未标记。

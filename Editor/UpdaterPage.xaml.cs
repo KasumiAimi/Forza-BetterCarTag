@@ -21,7 +21,7 @@ public partial class UpdaterPage : UserControl
     internal event Action<bool>? UpdateAvailableChanged;
     internal event Action<bool>? InstallStateChanged;
 
-    static UpdaterPage() => Http.DefaultRequestHeaders.UserAgent.ParseAdd($"BetterCarTage/{ReleaseUpdates.CurrentVersion}");
+    static UpdaterPage() => Http.DefaultRequestHeaders.UserAgent.ParseAdd($"BetterCarTag/{ReleaseUpdates.CurrentVersion}");
 
     public UpdaterPage()
     {
