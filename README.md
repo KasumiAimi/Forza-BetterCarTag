@@ -4,7 +4,7 @@
 
 [**下载 Windows 版（BetterCarTage.exe）**](https://github.com/KasumiAimi/Forza-better-cartage/releases/latest/download/BetterCarTage.exe)
 
-适用 Windows x64。下载后双击 EXE 即可使用，无需安装、编译或另装 .NET。
+适用 Windows x64。下载为压缩打包的单个 EXE，双击即可使用，无需安装或另装 .NET。
 
 ## 使用前请知悉
 
