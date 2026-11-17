@@ -33,7 +33,7 @@
 
 - 车辆标签保存在 `%LOCALAPPDATA%\FH6GarageEditor\tags`，自定义标签配置保存在同级的 `tag-catalog.json`。游戏存档和收藏仅用于读取。
 - 「应用到游戏」从原版 `media\UI.zip` 读取车卡模板，并生成 `mediapc\UI\Resources\Anthem\Shared_CarSelect.xaml`。退出游戏后，移走本工具生成的覆盖文件即可撤下游戏内标签。
-- 微软商店／Xbox App 版可直接使用「刷新车库」。如果没找到存档，可点击「选择存档」，在 `C:\XboxGames\GameSave\pgs` 下找到对应账户的 `C_ProfileData` 文件。
+- Steam 和微软商店／Xbox App 版都可以使用「刷新车库」自动查找存档。若未找到，可用「选择存档」手动打开对应账户的 `C_ProfileData` 文件。Windows 上可先查看 `C:\XboxGames\GameSave\pgs`。
 - 工具通过 Steam 自动定位游戏安装目录。轮胎名称、驱动形式和游戏内徽标需要读取游戏安装目录中的资源。
 
 ## 致谢
