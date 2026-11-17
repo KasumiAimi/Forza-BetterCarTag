@@ -13,7 +13,8 @@ namespace FH6GarageEditor;
 
 internal sealed record SaveSource(string Path, string ProfileKey, bool Backup, DateTime Modified);
 internal sealed record Car(int Id, int ModelId, string Vin, bool Favorite, int Pi, int ClassId,
-    string Thumbnail, string Make, string Name, int Year, int Rarity);
+    string Thumbnail, string Make, string Name, int Year, int Rarity, string? Tire, int? Horsepower,
+    int? WeightKg, string? DriveLayout);
 
 internal static class GarageReader
 {
@@ -41,19 +42,16 @@ internal static class GarageReader
             {
                 var file = Path.Combine(metadata, "LastSaveFolderLocation");
                 if (!File.Exists(file) || new FileInfo(file).Length > 4096) continue;
-                var candidate = File.ReadAllText(file).Trim('\0', '\r', '\n', '\uFEFF');
+                string candidate;
+                try { candidate = File.ReadAllText(file).Trim('\0', '\r', '\n', '\uFEFF'); }
+                catch (IOException) { continue; }
+                catch (UnauthorizedAccessException) { continue; }
                 if (Path.IsPathFullyQualified(candidate) && Directory.Exists(candidate)) roots.Add(candidate);
             }
         var pgs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "GameSaves", "pgs");
-        foreach (var folder in new[] { pgs, Path.Combine(Path.GetPathRoot(Environment.SystemDirectory)!, "XboxGames", "GameSave", "pgs") })
-            if (Directory.Exists(folder))
-                foreach (var profile in Directory.EnumerateDirectories(folder, "u_*_16D460"))
-                {
-                    var root = Path.Combine(profile, "current", "ContainersRoot");
-                    if (Directory.Exists(root)) roots.Add(root);
-                }
-        var live = roots.SelectMany(root => FindFiles(root, "C_ProfileData").Take(12)
-            .Select(file => Source(file, root, false)))
+        var systemPgs = Path.Combine(Path.GetPathRoot(Environment.SystemDirectory)!, "XboxGames", "GameSave", "pgs");
+        var live = roots.SelectMany(FindLiveSaves)
+            .Concat(new[] { pgs, systemPgs }.SelectMany(FindPgsSaves))
             .GroupBy(source => source.ProfileKey).Select(group => group.MaxBy(source => source.Modified)!)
             .OrderByDescending(source => source.Modified).ToList();
         if (live.Count != 0) return live;
@@ -63,6 +61,31 @@ internal static class GarageReader
                 .OrderByDescending(source => source.Modified).ToList()
             : [];
     }
+
+    private static IEnumerable<SaveSource> FindPgsSaves(string folder)
+    {
+        if (!Directory.Exists(folder)) yield break;
+        var options = new EnumerationOptions { IgnoreInaccessible = true, AttributesToSkip = 0 };
+        foreach (var profile in Directory.EnumerateDirectories(folder, "u_*_16D460", options))
+        {
+            var current = FindLiveSaves(Path.Combine(profile, "current", "ContainersRoot")).ToArray();
+            if (current.Length == 0)
+            {
+                // Gaming Services can leave only the numbered generation on disk.
+                var generations = Directory.EnumerateDirectories(profile, "*", options)
+                    .Select(path => (Path: path, Version: uint.TryParse(Path.GetFileName(path), out uint version) ? (uint?)version : null))
+                    .Where(item => item.Version.HasValue)
+                    .OrderByDescending(item => item.Version);
+                current = generations.Select(item => FindLiveSaves(Path.Combine(item.Path, "ContainersRoot")).ToArray())
+                    .FirstOrDefault(saves => saves.Length > 0) ?? [];
+            }
+            foreach (var save in current) yield return save;
+        }
+    }
+
+    private static IEnumerable<SaveSource> FindLiveSaves(string root) => Directory.Exists(root)
+        ? FindFiles(root, "C_ProfileData").Select(file => Source(file, root, false))
+        : [];
 
     private static IEnumerable<string> FindFiles(string root, string pattern) => Directory.EnumerateFiles(root, pattern,
         new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 4, IgnoreInaccessible = true });
@@ -83,6 +106,8 @@ internal static class GarageReader
         Directory.CreateDirectory(Data);
         var catalog = new Dictionary<int, (string Media, string Make, string Name, int Year, int Rarity)>();
         var performanceBands = new Dictionary<int, PerformanceBand>();
+        var tires = new Dictionary<(int Model, int Part), string>();
+        var driveLayouts = new Dictionary<(int Model, int Part), string>();
         if (game is not null)
         {
             var file = Path.Combine(game, "media", "stripped", "gamedbRC.slt");
@@ -100,20 +125,44 @@ internal static class GarageReader
                 });
                 Query(bytes, "SELECT Id, MaxPerformanceIndex, MaxDisplayPerformanceIndex FROM CarClasses ORDER BY Id", reader =>
                     performanceBands[reader.GetInt32(0)] = new PerformanceBand(reader.GetDouble(1), reader.GetInt32(2)));
+                Query(bytes, "SELECT Ordinal, Id, TireModelName, IsStock FROM List_UpgradeTireCompound", reader =>
+                {
+                    if (!reader.IsDBNull(2) && !string.IsNullOrWhiteSpace(reader.GetString(2)))
+                        tires[(reader.GetInt32(0), reader.GetInt32(1))] =
+                            VehicleDetails.TireName(reader.GetString(2), reader.GetInt32(3) == 1);
+                });
+                Query(bytes, """
+                    SELECT upgrade.Ordinal, upgrade.Id, drive.DrivetypeID
+                    FROM List_UpgradeDrivetrain AS upgrade
+                    JOIN Data_Drivetrain AS drive ON drive.DrivetrainID = upgrade.DrivetrainID
+                    """, reader =>
+                {
+                    if (!reader.IsDBNull(2) && VehicleDetails.DriveLayout(reader.GetInt32(2)) is string layout)
+                        driveLayouts[(reader.GetInt32(0), reader.GetInt32(1))] = layout;
+                });
             }
         }
         byte[] save = ReadShared(source.Path, 96 * 1024 * 1024);
         var cars = new List<Car>();
-        Query(ProfileDatabase(save), "SELECT Id,CarId,Guid,IsFavorite,PerformanceIndex,ClassID,Thumbnail FROM Career_Garage ORDER BY Id", reader =>
+        Query(ProfileDatabase(save), """
+            SELECT Id, CarId, Guid, IsFavorite, PerformanceIndex, ClassID, Thumbnail,
+                   TireCompound, SimPeakPower, CurbWeight, Drivetrain
+            FROM Career_Garage ORDER BY Id
+            """, reader =>
         {
             int id = reader.GetInt32(0);
             int model = reader.GetInt32(1);
             var definition = catalog.GetValueOrDefault(model, (Media: "", Make: "其他", Name: $"车型 {model}", Year: 0, Rarity: 0));
             double? pi = reader.IsDBNull(4) ? null : reader.GetDouble(4);
             int classId = reader.IsDBNull(5) ? -1 : reader.GetInt32(5);
+            string? tire = reader.IsDBNull(7) ? null : tires.GetValueOrDefault((model, reader.GetInt32(7)));
+            int? horsepower = reader.IsDBNull(8) ? null : VehicleDetails.Horsepower(reader.GetDouble(8));
+            int? weight = reader.IsDBNull(9) ? null : VehicleDetails.WeightKg(reader.GetDouble(9));
+            string? layout = reader.IsDBNull(10) ? null : driveLayouts.GetValueOrDefault((model, reader.GetInt32(10)));
             cars.Add(new Car(id, model, reader.GetValue(2).ToString() ?? "", !reader.IsDBNull(3) && reader.GetInt64(3) != 0,
                 PerformanceRating.Display(pi, classId, performanceBands), classId,
-                reader.IsDBNull(6) ? "" : reader.GetString(6), definition.Make, definition.Name, definition.Year, definition.Rarity));
+                reader.IsDBNull(6) ? "" : reader.GetString(6), definition.Make, definition.Name, definition.Year, definition.Rarity,
+                tire, horsepower, weight, layout));
         });
         if (cars.Select(car => car.Id).Distinct().Count() != cars.Count)
             throw new InvalidDataException("车库中存在无法区分的车辆编号。");

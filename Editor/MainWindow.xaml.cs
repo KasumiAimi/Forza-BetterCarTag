@@ -318,6 +318,11 @@ public partial class MainWindow : Window
         updateControls = true;
         DetailsName.Text = car?.Name ?? "选择一台车";
         DetailsMeta.Text = car is null ? "" : $"{car.Year} {car.Make}\n{Rating(car)} · 车库编号 #{car.Id}";
+        DetailsSpecs.Visibility = car is null ? Visibility.Collapsed : Visibility.Visible;
+        string power = car?.Horsepower is int hp ? $"{hp:N0} hp" : "暂无数据";
+        string weight = car?.WeightKg is int kg ? $"{kg:N0} kg" : "暂无数据";
+        DetailsSpecs.Text = car is null ? "" :
+            $"轮胎  {car.Tire ?? "暂无数据"}\n马力  {power}\n车重  {weight}\n驱动形式  {car.DriveLayout ?? "暂无数据"}";
         DetailsImage.Source = null;
         ImageSource.Text = car is null ? "" : "正在读取图片…";
         RaceTag.IsEnabled = StyleTag.IsEnabled = StrengthTag.IsEnabled = car is not null && !loading && catalogError is null;

@@ -2,7 +2,7 @@ name: Windows release
 on:
   push:
     branches: [main]
-    paths: [.github/workflows/windows-release.yml]
+    paths: [.github/workflows/windows-release.yml, Editor/FH6GarageEditor.csproj]
   workflow_dispatch:
 
 permissions:
