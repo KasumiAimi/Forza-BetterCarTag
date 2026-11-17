@@ -5,6 +5,8 @@ namespace FH6GarageEditor;
 
 public partial class App : Application
 {
+    private Mutex? instance;
+
     protected override void OnStartup(StartupEventArgs args)
     {
         base.OnStartup(args);
@@ -27,7 +29,25 @@ public partial class App : Application
             }
             return;
         }
+        var gate = new Mutex(false, @"Local\FH6GarageEditor.Instance");
+        try
+        {
+            if (!gate.WaitOne(0))
+            {
+                gate.Dispose();
+                ExistingEditorWindow.Activate();
+                Shutdown(0);
+                return;
+            }
+        }
+        catch (AbandonedMutexException)
+        {
+            // The previous editor exited without releasing the mutex. This thread now owns it.
+        }
+        instance = gate;
+
         var window = new MainWindow();
+        window.SourceInitialized += (_, _) => ExistingEditorWindow.Mark(window);
         if (args.Args is [ReleaseUpdates.ReadyArgument, var readyToken])
         {
             window.ContentRendered += (_, _) =>
@@ -39,5 +59,12 @@ public partial class App : Application
         }
         window.Show();
         _ = Task.Run(ReleaseUpdates.CleanOldHelpers);
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        instance?.ReleaseMutex();
+        instance?.Dispose();
+        base.OnExit(e);
     }
 }
