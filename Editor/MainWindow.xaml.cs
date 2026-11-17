@@ -330,7 +330,6 @@ public partial class MainWindow : Window
         DetailsSpecs.Text = car is null ? "" :
             $"轮胎  {car.Tire ?? "暂无数据"}\n马力  {power}\n车重  {weight}\n驱动形式  {car.DriveLayout ?? "暂无数据"}";
         DetailsImage.Source = null;
-        ImageSource.Text = car is null ? "" : "正在读取图片…";
         RaceTag.IsEnabled = StyleTag.IsEnabled = StrengthTag.IsEnabled = car is not null && !loading && catalogError is null;
         var carTags = car is null ? TagSet.Empty : tags?.Get(car) ?? TagSet.Empty;
         RaceTag.SelectedValue = catalog.Find(0, carTags.Use)?.Id ?? Untagged.Id;
@@ -342,16 +341,15 @@ public partial class MainWindow : Window
 
     private async Task LoadDetails(Car car, int revision)
     {
+        if (pictures is null) return;
         try
         {
-            var result = pictures is null ? (null, "暂无车辆图片") : await pictures.Get(car);
-            if (revision != detailRevision) return;
-            DetailsImage.Source = result.Item1;
-            ImageSource.Text = result.Item2;
+            var (image, _) = await pictures.Get(car);
+            if (revision == detailRevision) DetailsImage.Source = image;
         }
         catch
         {
-            if (revision == detailRevision) ImageSource.Text = "暂无车辆图片";
+            if (revision == detailRevision) DetailsImage.Source = null;
         }
     }
 

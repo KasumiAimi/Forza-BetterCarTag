@@ -25,8 +25,11 @@ internal static class VehicleDetails
         _ => null
     };
 
-    internal static string TireName(string model, bool stock)
+    internal static string? TireName(string? model, bool stock, int? compound)
     {
+        // DriftL1 and FormulaDrift can use the same visual model as street tires.
+        if (compound is 17 or 20) return stock ? "漂移胎（原厂）" : "漂移胎";
+        if (string.IsNullOrWhiteSpace(model)) return null;
         string name = model.ToUpperInvariant() switch
         {
             "OFFROAD_SNOW_OW" => "越野雪地胎",

@@ -100,7 +100,6 @@
                 <Border Background="#EEF0F4" Height="122" CornerRadius="4" ClipToBounds="True">
                   <Image x:Name="DetailsImage" Stretch="Uniform"/>
                 </Border>
-                <TextBlock x:Name="ImageSource" Foreground="{StaticResource Muted}" Margin="0,4,0,0" FontSize="12"/>
                 <TextBlock x:Name="DetailsSpecs" Margin="0,9,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
                 <TextBlock Text="赛事类型" Margin="0,16,0,5" FontWeight="Bold"/>
                 <ComboBox x:Name="RaceTag" DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="TagsChanged" IsEnabled="False" AutomationProperties.Name="赛事类型"/>

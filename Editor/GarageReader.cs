@@ -169,11 +169,12 @@ internal static class GarageReader
                 });
                 Query(bytes, "SELECT Id, MaxPerformanceIndex, MaxDisplayPerformanceIndex FROM CarClasses ORDER BY Id", reader =>
                     performanceBands[reader.GetInt32(0)] = new PerformanceBand(reader.GetDouble(1), reader.GetInt32(2)));
-                Query(bytes, "SELECT Ordinal, Id, TireModelName, IsStock FROM List_UpgradeTireCompound", reader =>
+                Query(bytes, "SELECT Ordinal, Id, TireModelName, IsStock, TireCompoundID FROM List_UpgradeTireCompound", reader =>
                 {
-                    if (!reader.IsDBNull(2) && !string.IsNullOrWhiteSpace(reader.GetString(2)))
-                        tires[(reader.GetInt32(0), reader.GetInt32(1))] =
-                            VehicleDetails.TireName(reader.GetString(2), reader.GetInt32(3) == 1);
+                    string? model = reader.IsDBNull(2) ? null : reader.GetString(2);
+                    int? compound = reader.IsDBNull(4) ? null : reader.GetInt32(4);
+                    if (VehicleDetails.TireName(model, reader.GetInt32(3) == 1, compound) is string name)
+                        tires[(reader.GetInt32(0), reader.GetInt32(1))] = name;
                 });
                 Query(bytes, """
                     SELECT upgrade.Ordinal, upgrade.Id, drive.DrivetypeID
