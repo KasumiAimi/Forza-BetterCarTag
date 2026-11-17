@@ -20,8 +20,27 @@ internal static class GarageReader
 {
     internal static readonly string Local = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ForzaHorizon6");
     internal static readonly string Data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FH6GarageEditor");
+    private static readonly string GameDirectoryFile = Path.Combine(Data, "game-directory.txt");
 
     internal static string? FindGame()
+    {
+        try
+        {
+            if (File.Exists(GameDirectoryFile)) return ResolveGameDirectory(File.ReadAllText(GameDirectoryFile));
+        }
+        catch (IOException) { return null; }
+        catch (UnauthorizedAccessException) { return null; }
+
+        string? steam;
+        try { steam = FindSteamGame(); }
+        catch (IOException) { steam = null; }
+        catch (UnauthorizedAccessException) { steam = null; }
+        return steam ?? FindXboxGame(DriveInfo.GetDrives()
+            .Where(drive => drive.DriveType == DriveType.Fixed)
+            .Select(drive => Path.Combine(drive.RootDirectory.FullName, "XboxGames")));
+    }
+
+    private static string? FindSteamGame()
     {
         var steam = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Valve\Steam", "SteamPath", null) as string;
         if (steam is null) return null;
@@ -31,7 +50,32 @@ internal static class GarageReader
             libraries.AddRange(Regex.Matches(File.ReadAllText(vdf), "\"path\"\\s+\"([^\"]+)\"")
                 .Select(match => match.Groups[1].Value.Replace(@"\\", @"\")));
         return libraries.Select(library => Path.Combine(library, "steamapps", "common", "ForzaHorizon6"))
-            .FirstOrDefault(path => File.Exists(Path.Combine(path, "forzahorizon6.exe")));
+            .Select(ResolveGameDirectory).FirstOrDefault(path => path is not null);
+    }
+
+    internal static string? FindXboxGame(IEnumerable<string> libraries)
+    {
+        var options = new EnumerationOptions { IgnoreInaccessible = true, AttributesToSkip = 0 };
+        return libraries.Where(Directory.Exists)
+            .SelectMany(library => Directory.EnumerateDirectories(library, "*", options))
+            .Select(ResolveGameDirectory).FirstOrDefault(path => path is not null);
+    }
+
+    internal static string? ResolveGameDirectory(string directory)
+    {
+        if (!Path.IsPathFullyQualified(directory)) return null;
+        return new[] { directory, Path.Combine(directory, "Content") }.FirstOrDefault(path =>
+            File.Exists(Path.Combine(path, "forzahorizon6.exe")) &&
+            File.Exists(Path.Combine(path, "media", "stripped", "gamedbRC.slt")) &&
+            File.Exists(Path.Combine(path, "media", "UI.zip")));
+    }
+
+    internal static void SetGameDirectory(string directory)
+    {
+        var resolved = ResolveGameDirectory(directory) ??
+            throw new InvalidDataException("该文件夹里未找到 FH6 游戏资源。请选择包含 forzahorizon6.exe 的文件夹。");
+        Directory.CreateDirectory(Data);
+        TagStore.AtomicWrite(GameDirectoryFile, Encoding.UTF8.GetBytes(resolved));
     }
 
     internal static List<SaveSource> FindSaves()

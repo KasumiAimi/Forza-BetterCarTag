@@ -77,11 +77,15 @@ internal static class BadgePatch
         if (Process.GetProcessesByName("forzahorizon6").Length != 0)
             throw new InvalidOperationException("请退出 FH6 后应用徽标。标签已保存在编辑器里。");
         var target = Path.Combine(game, Override);
-        var receipt = Path.Combine(GarageReader.Data, "badge-installed.sha256");
+        var directoryKey = Hash(Encoding.UTF8.GetBytes(Path.TrimEndingDirectorySeparator(Path.GetFullPath(game)).ToUpperInvariant()));
+        var receipt = Path.Combine(GarageReader.Data, $"badge-installed-{directoryKey}.sha256");
+        var priorReceipt = Path.Combine(GarageReader.Data, "badge-installed.sha256");
         if (File.Exists(target))
         {
             var current = File.ReadAllBytes(target);
-            bool owned = File.Exists(receipt) && File.ReadAllText(receipt) == Hash(current);
+            var currentHash = Hash(current);
+            var recordedReceipt = File.Exists(receipt) ? receipt : priorReceipt;
+            bool owned = File.Exists(recordedReceipt) && File.ReadAllText(recordedReceipt) == currentHash;
             var previousZip = Path.Combine(AppContext.BaseDirectory, "..", "FH6-Per-Car-Badge-Preview.zip");
             if (!owned && File.Exists(previousZip))
             {

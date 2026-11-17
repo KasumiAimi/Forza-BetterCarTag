@@ -120,8 +120,13 @@ public partial class MainWindow : Window
             ApplyButton.IsEnabled = false;
             RaceTag.IsEnabled = StyleTag.IsEnabled = StrengthTag.IsEnabled = false;
             Status.Text = "正在读取车库存档和车型目录…";
-            game = GarageReader.FindGame();
-            var loaded = await Task.Run(() => GarageReader.Read(source, game));
+            var (location, loaded) = await Task.Run(() =>
+            {
+                var directory = GarageReader.FindGame();
+                return (directory, GarageReader.Read(source, directory));
+            });
+            game = location;
+            GameDirectoryButton.ToolTip = game ?? "选择 FH6 游戏安装目录";
             var newTags = new TagStore(Path.Combine(GarageReader.Data, "tags"), source.ProfileKey);
             pictures?.Dispose();
             pictures = new CarPictures(game);
@@ -135,6 +140,7 @@ public partial class MainWindow : Window
             updateControls = false;
             Render();
             Status.Text = catalogError ?? $"已自动读取 {cars.Count:N0} 台车 · {(source.Backup ? "数据来自本机备份" : $"存档更新于 {source.Modified:MM-dd HH:mm}")}";
+            if (catalogError is null && game is null) Status.Text += " · 可选择游戏目录加载完整车辆信息";
         }
         catch (Exception error)
         {
@@ -354,6 +360,25 @@ public partial class MainWindow : Window
         if (!loading && Profiles.SelectedItem is ProfileOption option) await LoadProfile(option.Source);
     }
     private async void RefreshClick(object sender, RoutedEventArgs args) => await RefreshProfiles();
+    private async void ChooseGameDirectoryClick(object sender, RoutedEventArgs args)
+    {
+        if (loading || applying) return;
+        var picker = new OpenFolderDialog { Title = "选择包含 forzahorizon6.exe 的游戏文件夹" };
+        if (game is not null) picker.InitialDirectory = game;
+        if (picker.ShowDialog(this) != true) return;
+        try
+        {
+            GarageReader.SetGameDirectory(picker.FolderName);
+            if (Profiles.SelectedItem is ProfileOption option) await LoadProfile(option.Source);
+            else
+            {
+                GameDirectoryButton.ToolTip = GarageReader.ResolveGameDirectory(picker.FolderName);
+                Status.Text = "已保存游戏目录。请刷新车库或选择存档。";
+            }
+        }
+        catch (Exception error) { Error(error); }
+    }
+
     private async void OpenSaveClick(object sender, RoutedEventArgs args)
     {
         if (loading) return;

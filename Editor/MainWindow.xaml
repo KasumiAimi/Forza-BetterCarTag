@@ -122,6 +122,8 @@
             <TextBlock x:Name="PageLabel" VerticalAlignment="Center" Margin="10,0"/>
             <Button x:Name="Next" Content="下一页" Click="NextClick"/>
           </StackPanel>
+          <Button x:Name="GameDirectoryButton" DockPanel.Dock="Right" Content="游戏目录" Click="ChooseGameDirectoryClick"
+                  Margin="0,0,10,0"/>
           <TextBlock x:Name="Status" Text="正在读取本机车库…" VerticalAlignment="Center" Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
         </DockPanel>
       </Grid>
